@@ -1058,7 +1058,7 @@ public class MySQLAdaptor implements PersistenceAdaptor {
 	}
 	
 	/**
-	 * Fetch instances from a specied class and a list of db ids in that class.
+	 * Fetches instances from a specied class and a list of db ids in that class.
 	 * @param className
 	 * @param dbIds
 	 * @return
@@ -1105,8 +1105,77 @@ public class MySQLAdaptor implements PersistenceAdaptor {
 		return instances;
 	}
 
-	public Collection fetchInstancesByClass(String className) throws Exception {
-		((GKSchema) schema).isValidClassOrThrow(className);
+    /**
+     * Fetches all instances of the given class.
+     * 
+     * @param className the target class
+     * @return the target instances
+     * @throws Exception if there is a query failure
+     */
+    public Collection fetchInstancesByClass(String className) throws Exception {
+        String sql = createFetchInstancesByClassSQL(className);
+        Set instances = fetchInstances(sql);
+        return instances;
+    }
+
+    /**
+     * Fetches instances of the given class filtered to DB_ID
+     * in the result of the given subquery SQL. The subquery SQL
+     * must have a DB_ID result.
+     * 
+     * <em>Note</em>: this method builds an <code>IN</code> SQL
+     * statement that might be less efficient than an equivalent
+     * inner join.
+     * 
+     * @param className the target class
+     * @param sql the  subquery SQL statement
+     * @return the filtered target instances
+     * @throws Exception if there is a query failure
+     */
+    public Set<Instance> fetchInstancesIn(String className, String subquery) throws Exception {
+        String fetchSql = createFetchInstancesByClassSQL(className);
+        String condition =  className + ".DB_ID IN (" + subquery + ")";
+        return fetchInstances(fetchSql + " AND " + condition);
+    }
+
+    /**
+     * Fetches instances of the given class which are not referenced
+     * by the given attribute. For example,
+     * <code>
+     * MySQLAdaptor dba = (MySQLAdaptor)getDatasource();
+     * SchemaClass originCls = dba.getSchema().getClassByName("Pathway");
+     * SchemaAttribute originAtt = originCls.getAttribute("hasEvent");
+     * dba.fetchInstancesWithoutReference("Event", originAtt)
+     * </code>
+     * fetches the <code>Event</code> instances which are not
+     * referenced by a <code>Pathway</code> <code>hasEvent</code>
+     * relationship.
+     * 
+     * @param className the target class name
+     * @param attribute the origin reference attribute
+     * @return the target instances
+     * @throws Exception if there is a query failure
+     */
+    public Set<Instance> fetchUnreferencedInstances(
+            String className, SchemaAttribute attribute) throws Exception {
+        String fetchSql = createFetchInstancesByClassSQL(className);
+        String notInSql = createReverseNotInSQL(className, attribute);
+        Set<Instance> instances = fetchInstances(fetchSql + " AND " + notInSql);
+        return instances;
+    }
+
+    /**
+     * Builds the SQL to fetch all records in the given class
+     * table. It is recommended that the query be qualified by
+     * a WHERE clause.
+     * 
+     * @param className the target class name
+     * @return the SQL query string
+     * @throws InvalidClassException if the given class is invalid
+     */
+    private String createFetchInstancesByClassSQL(String className)
+            throws InvalidClassException {
+        ((GKSchema) schema).isValidClassOrThrow(className);
 		String rootClassName = ((GKSchema) schema).getRootClass().getName();
 		StringBuffer sql = new StringBuffer("SELECT " + rootClassName + "." + DB_ID_NAME + "," +
 											rootClassName + "._class," +
@@ -1121,9 +1190,39 @@ public class MySQLAdaptor implements PersistenceAdaptor {
 		//SchemaAttribute _displayName = ((GKSchema) schema).getRootClass().getAttribute("_displayName");
 		//AttributeHandler ah = new SingleValueAttributeHandler(_displayName, 3);
 		//System.out.println("\n" + sql.toString());
-		PreparedStatement ps = getConnection().prepareStatement(sql.toString());
+		String sqlStr = sql.toString();
+        return sqlStr;
+    }
+	
+    /**
+     * Builds the SQL clause to fetch records which are not referenced by
+     * the given attribute. For example,
+     * <code>
+     * MySQLAdaptor dba = (MySQLAdaptor)getDatasource();
+     * SchemaClass originCls = dba.getSchema().getClassByName("Pathway");
+     * SchemaAttribute originAtt = originCls.getAttribute("hasEvent");
+     * createReverseNotInSQL("Event", originAtt)
+     * </code>
+     * returns:
+     * <code>Event.DB_ID NOT IN (SELECT hasEvent FROM Pathway_2_hasEvent)</code>
+     * 
+     * @param className the target class name
+     * @param attribute the origin attribute
+     * @return the SQL string
+     */
+    private String createReverseNotInSQL(String className, SchemaAttribute attribute) {
+	    String attName = attribute.getName();
+        String originName = attribute.getOrigin().getName();
+        String intersectionName = new String(originName + "_2_" + attName);
+        String subselect = "(SELECT " + attName + " FROM " + intersectionName + ")";
+        return className + ".DB_ID NOT IN " + subselect;
+	}
+
+    private Set<Instance> fetchInstances(String sql) throws SQLException,
+            InstantiationException, IllegalAccessException, ClassNotFoundException {
+        PreparedStatement ps = getConnection().prepareStatement(sql);
 		ResultSet rs = ps.executeQuery();
-		Set instances = new HashSet();
+		Set<Instance> instances = new HashSet<Instance>();
 		Long dbId = new Long(0);
 		Instance instance = null;
 		while (rs.next()) {
@@ -1143,8 +1242,8 @@ public class MySQLAdaptor implements PersistenceAdaptor {
 			}
 			//ah.handleAttributeValue((GKInstance) instance, rs);
 		}
-		return instances;
-	}
+        return instances;
+    }
 
 	public long getClassInstanceCount(SchemaClass cls) throws InvalidClassException, SQLException {
 		return getClassInstanceCount(cls.getName());
@@ -2678,7 +2777,7 @@ public class MySQLAdaptor implements PersistenceAdaptor {
 	}
 
 	/**
-	 * Fetchies a Set of instances from db which look idential to the given instace
+	 * Fetches a Set of instances from db which look identical to the given instance
 	 * based on the values of defining attributes.
 	 * The method is recursive i.e. if a value instance of the given instance does
 	 * not have DB_ID (i.e. it hasn't been stored in db yet) fetchIdenticalInstance is
