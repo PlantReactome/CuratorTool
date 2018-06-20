@@ -80,6 +80,8 @@ public class ReactomeJavaConstants {
     public static final String Depolymerisation = "Depolymerisation";
     public static final String Polymerisation = "Polymerisation";
     public static final String ReactionlikeEvent = "ReactionlikeEvent";
+    // A convenience constant to match the RLE class name used in Reactome.
+    public static final String ReactionLikeEvent = ReactionlikeEvent;
     public static final String TargettedInteraction = "TargetedInteraction";
     
     // class names for the "pathway diagram" model update
@@ -252,6 +254,7 @@ public class ReactomeJavaConstants {
     public static final String chapterTitle = "chapterTitle";
     public static final String chapterAuthors = "chapterAuthors";
     public static final String publisher = "publisher";
+    public static final String Publication = "Publication";
     public static final String uniformResourceLocator = "uniformResourceLocator";
     // Attributes in FragmentModification
     public static final String startPositionInReferenceSequence = "startPositionInReferenceSequence";
@@ -322,4 +325,5 @@ public class ReactomeJavaConstants {
     
     public static final String containedInPathway = "containedInPathway";
     public static final String regulatedBy = "regulatedBy";
+    public static final String entityOnOtherCell = "entityOnOtherCell";
 }
