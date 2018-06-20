@@ -2,10 +2,13 @@ package org.gk.qualityCheck;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.gk.util.FileUtilities;
 
@@ -94,9 +97,19 @@ public class QAReport {
 	public List<List<String>> getReportLines() {
 		return Collections.unmodifiableList(this.reportLines);
 	}
+	
+    /**
+     * Print the report to the given print writer.
+     */
+	public void output(PrintWriter writer) throws IOException {
+	    writer.write(String.join(delimiter, columnHeaders));
+	    for (List<String> line: getReportLines()) {
+	        writer.println(String.join(delimiter, line));
+	    }
+	}
 
     /**
-     * Print the report.
+     * Print the report to the given file.
      */
     public void output(String fileName, String outputDir) throws IOException {
     	FileUtilities fu = new FileUtilities();
