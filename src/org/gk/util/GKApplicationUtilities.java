@@ -40,7 +40,7 @@ import org.w3c.dom.Document;
  */
 public class GKApplicationUtilities {
     // DB_ID for homo sapiens: this will never be changed
-    public static final Long HOMO_SAPIENS_DB_ID = 48887L;
+	public static final Long REF_SPECIES_DB_ID = 186860L;
     // Reactome URL
     public static String REACTOME_INSTANCE_URL = "http://www.reactome.org/cgi-bin/eventbrowser?DB=gk_current&ID=";
     private static final String REACTOME_DIR = System.getProperty("user.home") + File.separator + ".reactome";

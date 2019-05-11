@@ -56,7 +56,10 @@ public class PathwayDiagramDumper {
         PathwayDiagramGeneratorViaAT generator = new PathwayDiagramGeneratorViaAT();
         File pdfDir = new File(outputDir, "PDF");
         File pngDir = new File(outputDir, "PNG");
+        int count = 0;
         for (Iterator<?> it = diagrams.iterator(); it.hasNext();) {
+            count++;
+            //if (count > 50) break;
             GKInstance diagramInst = (GKInstance) it.next();
 //            if (!diagramInst.getDisplayName().equals("Diagram of Abnormal metabolism in phenylketonuria"))
 //                continue;
@@ -78,11 +81,14 @@ public class PathwayDiagramDumper {
             generator.paintOnImage(editor);
             editor.tightNodes(true);
             // Output PDF
-            String fileName = diagramInst.getDisplayName();
-            fileName = fileName.replaceAll("(\\\\|/)", "-");
+            //String fileName = diagramInst.getDisplayName();
+            //fileName = fileName.replaceAll("(\\\\|/)", "-");
+            GKInstance actualParentPathway = (GKInstance)diagramInst.getAttributeValue(ReactomeJavaConstants.representedPathway);
+            String fileName = ((GKInstance)actualParentPathway.getAttributeValue(ReactomeJavaConstants.stableIdentifier)).getDisplayName();
+            fileName = fileName.replace(".1","");
             // Make sure the file name is not too long
-            if (fileName.length() > 255 - 4) // 4 is for .png or .pdf
-                fileName = fileName.substring(0, 255 - 4);
+            //if (fileName.length() > 255 - 4) // 4 is for .png or .pdf
+            //    fileName = fileName.substring(0, 255 - 4);
             // Note: It seems there is a bug in the PDF exporter to set correct FontRenderContext.
             // Have to call PNG export first to make some rectangles correct.
             File pngFileName = new File(pngDir, fileName + ".png");
@@ -119,7 +125,7 @@ public class PathwayDiagramDumper {
        // Check if human is a species
        for (Iterator<?> it = values.iterator(); it.hasNext();) {
            GKInstance species = (GKInstance) it.next();
-           if (species.getDBID().equals(GKApplicationUtilities.HOMO_SAPIENS_DB_ID))
+           if (species.getDBID().equals(GKApplicationUtilities.REF_SPECIES_DB_ID))
                return true;
        }
        return false;
